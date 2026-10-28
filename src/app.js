@@ -8,7 +8,6 @@ const agendamentos = require('./modules/agendamentos');
 const app = express();
 app.use(express.json());
 
-// Timeout por requisição: 5 s -> 504
 app.use((req, res, next) => {
   const timer = setTimeout(() => {
     if (!res.headersSent) res.status(504).json({ erro: 'Tempo limite excedido' });
@@ -33,7 +32,6 @@ app.use(agendamentos.router);
 
 app.use((req, res) => res.status(404).json({ erro: 'Rota não encontrada' }));
 
-// Traduz erros conhecidos para códigos HTTP
 app.use((err, req, res, next) => {
   if (res.headersSent) return;
   if (err.status) return res.status(err.status).json({ erro: err.message });

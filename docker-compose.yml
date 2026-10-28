@@ -15,7 +15,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     ports:
-      - "15672:15672" # painel: http://localhost:15672 (guest/guest)
+      - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -32,7 +32,7 @@ services:
       rabbitmq: { condition: service_healthy }
     restart: unless-stopped
     deploy:
-      replicas: 2 # duas instâncias atrás do gateway
+      replicas: 2
 
   worker:
     build: .

@@ -9,8 +9,6 @@ let channel = null;
 
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Conecta ao RabbitMQ (com reconexão automática) e declara exchange, fila e DLQ.
-// onReady(channel) é chamado a cada (re)conexão — usado pelo worker para voltar a consumir.
 async function connect({ onReady } = {}) {
   for (;;) {
     try {
@@ -46,8 +44,6 @@ function isConnected() {
   return channel !== null;
 }
 
-// Publica um evento persistente. Se o broker estiver fora, tenta de novo em segundo plano
-// (o agendamento já foi confirmado e não deve falhar por causa disso).
 function publish(routingKey, payload, tentativa = 1) {
   if (channel) {
     channel.publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), {

@@ -1,10 +1,8 @@
--- ============ P1 — Infra: um schema por módulo ============
 CREATE SCHEMA pacientes;
 CREATE SCHEMA agenda;
 CREATE SCHEMA agendamentos;
 CREATE SCHEMA notificacoes;
 
--- ============ P2 — Módulo Pacientes ============
 CREATE TABLE pacientes.pacientes (
   id        SERIAL PRIMARY KEY,
   nome      TEXT NOT NULL,
