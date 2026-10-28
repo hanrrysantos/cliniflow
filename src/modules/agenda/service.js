@@ -49,8 +49,6 @@ async function buscarHorario(horarioId) {
   return { ...horario, medico: { nome, especialidade } };
 }
 
-// Reserva atômica: só uma transação consegue mudar LIVRE -> RESERVADO.
-// Resolve a corrida de dois pacientes pelo último horário.
 async function reservarHorario(client, horarioId) {
   const { rowCount } = await client.query(
     "UPDATE agenda.horarios SET status = 'RESERVADO' WHERE id = $1 AND status = 'LIVRE'",
