@@ -1,0 +1,17 @@
+{
+  "name": "cliniflow",
+  "version": "1.0.0",
+  "description": "MVP de sistema distribuído de agendamento de consultas",
+  "private": true,
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "worker": "node src/worker.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^2.2.0",
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
+  }
+}

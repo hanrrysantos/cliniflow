@@ -8,7 +8,7 @@ combinados, então todos podem trabalhar em paralelo desde o início.
 ```
 docker-compose.yml        # P1
 gateway/nginx.conf        # P1
-db/init.sql               # P1 cria o arquivo; cada pessoa escreve a parte do seu schema
+db/init.sql               # P1 commita (já contém uma seção com as tabelas de cada módulo)
 src/
   app.js                  # P1 — Express, monta as rotas dos módulos, /health, timeout
   worker.js               # P5 — processo do worker de notificações
@@ -59,18 +59,39 @@ Payload dos eventos:
 | **P4** | Módulo Agendamentos | Tabela `agendamentos.consultas` com índice único parcial; `POST /consultas` (valida paciente, reserva na mesma transação, `409` se ocupado, header `Idempotency-Key`), `DELETE /consultas/:id` (cancela e libera horário), `GET /consultas/:id`; publica os eventos após o commit. |
 | **P5** | Módulo Notificações + demo | Tabela `notificacoes.notificacoes_enviadas`; `src/worker.js` consumindo a fila com ack manual, idempotência por `event_id`, até 3 tentativas e depois DLQ; "envio" do e-mail via `console.log`. Escreve o `requests.http` com o roteiro de demonstração (inclui o teste dos dois pedidos no mesmo horário) e revisa o `docs/ARQUITETURA.md`. |
 
-## Cronograma
+## Como enviar a sua parte para o repositório
 
-| Horário | O quê |
-|---------|-------|
-| até 15:35 | P1 sobe o esqueleto (estrutura, compose, `db.js`, `broker.js`, `app.js` montando as rotas) para a `main`. Os outros já começam o código dos seus módulos seguindo os contratos. |
-| 15:35 – 16:05 | Cada pessoa implementa e testa o próprio módulo. |
-| 16:05 – 16:20 | Integração: `docker compose up`, rodar o `requests.http` de ponta a ponta, corrigir bugs. |
-| 16:20 – 16:30 | README final, último commit e entrega. |
+O código completo já foi feito e testado no notebook do P1 e distribuído em `cliniflow.zip`.
+Cada integrante commita **apenas os arquivos da sua parte**, com a própria conta do GitHub.
 
-## Regras de Git
+| Pessoa | Arquivos para commitar | Mensagem sugerida |
+|--------|------------------------|-------------------|
+| **P1** | `package.json`, `package-lock.json`, `.gitignore`, `.dockerignore`, `Dockerfile`, `docker-compose.yml`, `gateway/`, `db/init.sql`, `src/app.js`, `src/shared/`, `README.md`, `docs/DIVISAO_TAREFAS.md` | `feat: adiciona infraestrutura e base da API` |
+| **P2** | `src/modules/pacientes/` | `feat(pacientes): adiciona módulo de pacientes` |
+| **P3** | `src/modules/agenda/` | `feat(agenda): adiciona médicos, horários e reserva atômica` |
+| **P4** | `src/modules/agendamentos/` | `feat(agendamentos): adiciona agendamento e cancelamento de consultas` |
+| **P5** | `src/worker.js`, `src/modules/notificacoes/`, `requests.http` | `feat(notificacoes): adiciona worker com retentativas e DLQ` |
 
-- Cada pessoa trabalha numa branch `feat/<modulo>` e só altera a própria pasta (e a sua parte do
-  `init.sql`).
-- Abre PR (ou faz merge direto, dado o prazo) na `main` assim que o módulo funcionar.
-- Mudança em contrato ou em arquivo de outra pessoa: avisar no grupo antes.
+Passo a passo (cada integrante):
+
+```bash
+git clone git@github.com:hanrrysantos/cliniflow.git   # ou: git pull, se já tiver clonado
+cd cliniflow
+# extraia o cliniflow.zip em outra pasta e copie para cá SOMENTE os arquivos da sua linha
+git add <seus arquivos>
+git commit -m "<mensagem sugerida>"
+git pull --rebase    # pega o que os colegas já enviaram
+git push
+```
+
+Como cada pessoa mexe em arquivos diferentes, a ordem dos pushes não gera conflito. Se o push for
+recusado, basta repetir `git pull --rebase` e `git push`.
+
+## Como rodar
+
+```bash
+docker compose up -d --build
+docker compose logs -f worker # e-mails simulados, retentativas e DLQ
+```
+
+O roteiro completo da demonstração está em `requests.http`.
