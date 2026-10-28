@@ -1,0 +1,65 @@
+### Roteiro de demonstração — use com a extensão REST Client (VS Code)
+@base = http://localhost:8080
+
+### 1. Healthcheck
+GET {{base}}/health
+
+### 2. Cadastrar paciente
+POST {{base}}/pacientes
+Content-Type: application/json
+
+{ "nome": "Ana Souza", "email": "ana@email.com", "telefone": "91999990000" }
+
+### 3. Cadastrar médico
+POST {{base}}/medicos
+Content-Type: application/json
+
+{ "nome": "Dr. João Lima", "especialidade": "Cardiologia" }
+
+### 4. Criar horário livre para o médico 1
+POST {{base}}/medicos/1/horarios
+Content-Type: application/json
+
+{ "data_hora": "2026-11-03T14:00:00-03:00" }
+
+### 5. Listar horários livres
+GET {{base}}/horarios?status=LIVRE
+
+### 6. Agendar consulta (veja o e-mail no log do worker: docker compose logs -f worker)
+POST {{base}}/consultas
+Content-Type: application/json
+Idempotency-Key: pedido-001
+
+{ "paciente_id": 1, "horario_id": 1 }
+
+### 7. Reenviar o MESMO pedido (mesma Idempotency-Key) -> 200 com a mesma consulta, sem duplicar
+POST {{base}}/consultas
+Content-Type: application/json
+Idempotency-Key: pedido-001
+
+{ "paciente_id": 1, "horario_id": 1 }
+
+### 8. Outro pedido para o mesmo horário -> 409 Horário indisponível
+POST {{base}}/consultas
+Content-Type: application/json
+
+{ "paciente_id": 1, "horario_id": 1 }
+
+### 9. Consultar status
+GET {{base}}/consultas/1
+
+### 10. Cancelar consulta (libera o horário e gera e-mail de cancelamento)
+DELETE {{base}}/consultas/1
+
+### 11. Falha no evento: paciente com "falha" no e-mail -> 3 tentativas e depois DLQ
+###     (veja a fila notificacoes.dlq em http://localhost:15672, guest/guest)
+POST {{base}}/pacientes
+Content-Type: application/json
+
+{ "nome": "Paciente Teste", "email": "falha@email.com" }
+
+### 12. Agendar para o paciente 2 (horário 1 foi liberado no passo 10)
+POST {{base}}/consultas
+Content-Type: application/json
+
+{ "paciente_id": 2, "horario_id": 1 }
