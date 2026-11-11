@@ -128,6 +128,7 @@ esperar: o e-mail.
 Pré-requisito: Docker com Docker Compose.
 
 ```bash
+cp .env.example .env   # preencha LOCALSTACK_AUTH_TOKEN (ver "Pipeline de fotos")
 docker compose up -d --build
 curl http://localhost:8080/health
 ```
@@ -136,6 +137,40 @@ curl http://localhost:8080/health
 |----------|-------|
 | `http://localhost:8080` | API (via API Gateway Nginx) |
 | `http://localhost:15672` | Painel do RabbitMQ (guest/guest) — filas `notificacoes` e `notificacoes.dlq` |
+| `http://localhost:4566` | LocalStack (S3 e Lambda emulados) — buckets `cliniflow-originais` e `cliniflow-miniaturas` |
+
+## Pipeline de fotos (trabalho final — Serverless & Edge)
+
+Envio da foto de perfil do médico com geração automática de miniatura (200×200 WebP).
+Arquitetura e decisões: [`docs/ARQUITETURA_SERVERLESS.md`](docs/ARQUITETURA_SERVERLESS.md).
+Contratos: [`docs/CONTRATOS.md`](docs/CONTRATOS.md).
+
+**LocalStack:** crie uma conta gratuita em [localstack.cloud](https://localstack.cloud) (plano
+*Hobby*, sem cartão), copie o seu *Auth Token* e coloque em `.env` como `LOCALSTACK_AUTH_TOKEN`.
+O token é pessoal e o `.env` não vai para o Git. Sem o token, o resto do CliniFlow funciona
+normalmente; só o pipeline de fotos fica indisponível.
+
+| Endpoint | O quê |
+|----------|-------|
+| `POST /medicos/:id/foto` | Registra a foto como `PROCESSANDO` e devolve a URL do Worker e a URL de upload pré-assinada (5 min) |
+| `GET /fotos/:id` | Status (`PROCESSANDO`, `CONCLUIDO` ou `ERRO`) e, se concluída, `miniatura_url` |
+| `GET /medicos/:id/foto` | Foto `CONCLUIDO` mais recente do médico |
+
+A Lambda não acessa o banco: a API atualiza o status consultando o S3 quando a foto é
+consultada (miniatura existe → `CONCLUIDO`; arquivo `erros/...json` existe → `ERRO`; mais de
+`FOTO_TIMEOUT_SEGUNDOS` sem resultado → `ERRO`).
+
+Roteiro: passos 13 a 20 do `requests.http`. Para testar a API sem o Worker e a Lambda:
+
+```bash
+# envio direto ao S3, no lugar do Worker (use a X-Upload-Url devolvida no POST)
+curl -X PUT -H "Content-Type: image/jpeg" --upload-file docs/exemplos/foto.jpg "<X-Upload-Url>"
+
+# simular a Lambda: gravar a miniatura (ou o JSON de erro em erros/medicos/1/<foto_id>.json)
+docker compose exec localstack sh -c "echo x > /tmp/m && awslocal s3 cp /tmp/m s3://cliniflow-miniaturas/medicos/1/<foto_id>.webp"
+```
+
+Para ver o tempo limite rapidamente: `FOTO_TIMEOUT_SEGUNDOS=10 docker compose up -d api`.
 
 ## Demonstração
 
@@ -155,4 +190,6 @@ src/
   shared/            # db (transações), broker (RabbitMQ + DLQ), HttpError
   modules/
     pacientes/  agenda/  agendamentos/  notificacoes/
+    fotos/           # upload e consulta de fotos (S3 pré-assinado + reconciliação de status)
+localstack/init/     # cria os buckets ao subir o LocalStack
 ```

@@ -63,3 +63,49 @@ POST {{base}}/consultas
 Content-Type: application/json
 
 { "paciente_id": 2, "horario_id": 1 }
+
+
+### ================= Trabalho final — Pipeline de fotos (Serverless & Edge) =================
+### Contratos: docs/CONTRATOS.md. Pré-requisito: LocalStack de pé (LOCALSTACK_AUTH_TOKEN no .env).
+
+### 13. Solicitar upload da foto do médico 1 -> 201 PROCESSANDO + instruções de envio ao Worker
+# @name foto
+POST {{base}}/medicos/1/foto
+Content-Type: application/json
+
+{ "content_type": "image/jpeg", "tamanho": 348120 }
+
+### 14. Enviar o arquivo ao Worker (Integrante 3; wrangler dev em :8787)
+###     Sem o Worker, envie direto ao S3: curl -X PUT -H "Content-Type: image/jpeg" --upload-file foto.jpg "<X-Upload-Url>"
+PUT {{foto.response.body.upload.url}}
+Content-Type: image/jpeg
+X-Upload-Url: {{foto.response.body.upload.headers.X-Upload-Url}}
+
+< ./docs/exemplos/foto.jpg
+
+### 15. Consultar o resultado -> PROCESSANDO, depois CONCLUIDO (com miniatura_url) ou ERRO
+GET {{base}}/fotos/{{foto.response.body.foto_id}}
+
+### 16. Foto atual do médico 1 (a CONCLUIDO mais recente)
+GET {{base}}/medicos/1/foto
+
+### 17. Tipo não aceito -> 415
+POST {{base}}/medicos/1/foto
+Content-Type: application/json
+
+{ "content_type": "image/gif", "tamanho": 1000 }
+
+### 18. Maior que 5 MB -> 413
+POST {{base}}/medicos/1/foto
+Content-Type: application/json
+
+{ "content_type": "image/png", "tamanho": 6000000 }
+
+### 19. Médico inexistente -> 404
+POST {{base}}/medicos/999/foto
+Content-Type: application/json
+
+{ "content_type": "image/png", "tamanho": 1000 }
+
+### 20. Foto inexistente -> 404 / id inválido -> 400
+GET {{base}}/fotos/00000000-0000-4000-8000-000000000000
