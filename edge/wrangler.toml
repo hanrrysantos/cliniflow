@@ -1,0 +1,10 @@
+name = "cliniflow-borda"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+# Sem segredos: o Worker não tem credencial AWS (docs/CONTRATOS.md §4).
+# Valores locais (LocalStack). Em produção: a origem do S3 real e o nome real do bucket.
+[vars]
+S3_ALLOWED_ORIGIN = "http://localhost:4566"
+BUCKET_ORIGINAIS = "cliniflow-originais"
+MAX_BYTES = "5242880"

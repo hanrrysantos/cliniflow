@@ -2,3 +2,6 @@ node_modules/
 .env
 *.zip
 scripts/
+.wrangler/
+.aws-sam/
+localstack/dados/

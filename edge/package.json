@@ -1,0 +1,16 @@
+{
+  "name": "cliniflow-borda",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker de entrada do pipeline de miniaturas do CliniFlow",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

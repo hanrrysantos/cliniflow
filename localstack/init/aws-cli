@@ -1,0 +1,9 @@
+# Incluído pelos scripts de init e shutdown (sem .sh, para o LocalStack não executá-lo como hook).
+# O awslocal está obsoleto; o LocalStack recomenda `lstk aws`. Se o lstk não estiver na imagem,
+# usa o aws CLI comum apontado para o próprio LocalStack (é o que o awslocal fazia por baixo).
+if command -v lstk >/dev/null 2>&1; then
+  AWS() { lstk aws "$@"; }
+else
+  export AWS_ENDPOINT_URL=http://localhost:4566 AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1
+  AWS() { aws "$@"; }
+fi
