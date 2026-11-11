@@ -302,9 +302,14 @@ async function enviarFoto(medico, arquivo, estado) {
   }
   if (!res.ok) throw new Error((await res.json().catch(() => null))?.erro || `O upload respondeu ${res.status}`);
   estado.textContent = 'Arquivo enviado. Gerando a miniatura…';
+  // A API marca ERRO depois do tempo limite (5 min), mas não enquanto o S3 está fora do ar
+  // (CONTRATOS §3). Por isso o navegador desiste sozinho um pouco depois.
+  const limite = Date.now() + 6 * 60 * 1000;
   let atual = foto;
-  // a API encerra a espera sozinha: depois do tempo limite ela responde ERRO
   while (atual.status === 'PROCESSANDO') {
+    if (Date.now() > limite) {
+      throw new Error('A miniatura não ficou pronta em 6 minutos. Confira se o LocalStack está no ar e recarregue a página para ver se a foto foi processada.');
+    }
     await new Promise((r) => setTimeout(r, 2000));
     atual = await api('GET', foto.consulta);
   }

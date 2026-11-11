@@ -135,7 +135,8 @@ npm test
 npx wrangler dev
 ```
 
-`npm test` roda 12 testes, sem rede: cenários 1, 4, 6 e 7 da §7, mais 400, 413, 415, 502, 404 e 405.
+`npm test` roda 13 testes, sem rede: cenários 1, 4, 6 e 7 da §7, mais 400, 413, 415, 502, 404, 405 e o
+preflight de CORS.
 O `wrangler dev` sobe o Worker em `http://localhost:8787`.
 
 ### 5. Fluxo completo
