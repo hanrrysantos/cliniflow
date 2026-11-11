@@ -1,6 +1,6 @@
 # CliniFlow — Lambda de miniaturas (Integrante 2)
 
-Implementação da [seção 5 dos contratos do grupo](../../docs/CONTRATOS.md). A PoC é local: o Integrante 3 configura S3 e Lambda no LocalStack e o Worker em `wrangler dev`; o Integrante 1 cuida da API e da reconciliação dos estados. Este diretório não implanta recursos, não contém credenciais e não altera os módulos existentes.
+Implementação da [seção 5 dos contratos do grupo](../../docs/CONTRATOS.md). A PoC é local: o [módulo de infraestrutura](../../docs/INFRA.md) registra S3 e Lambda no LocalStack; o Worker roda em `wrangler dev`. O Integrante 1 cuida da API e da reconciliação dos estados. Este diretório contém o código da função, sem credenciais; o registro da função e do gatilho fica em `localstack/init/02-lambda.sh`.
 
 ## Fluxo
 
@@ -24,12 +24,12 @@ Falhas permanentes de imagem gravam o JSON e terminam com sucesso. Falhas do S3,
 | `BUCKET_MINIATURAS` | `cliniflow-miniaturas` | Miniaturas e JSON de erros |
 | `MAX_IMAGE_BYTES` | `5242880` | Limite de bytes do original |
 | `MAX_IMAGE_PIXELS` | `25000000` | Limite de pixels após decodificar |
-| `S3_ENDPOINT` | não definido | `http://localstack:4566` dentro do Docker; omitido na AWS real |
+| `S3_ENDPOINT` | não definido | O script local usa `http://localhost.localstack.cloud:4566` dentro do container da Lambda; omitido na AWS real |
 | `AWS_REGION` | SDK | `us-east-1` no LocalStack |
 
 Quando `S3_ENDPOINT` está definido, o SDK usa `forcePathStyle: true`. As credenciais `test`/`test` do LocalStack devem ser injetadas pelo ambiente de execução, conforme [§6 dos contratos](../../docs/CONTRATOS.md). Nunca use o token pessoal do LocalStack no código ou no Git.
 
-**Para o Integrante 3:** configurar notificação `s3:ObjectCreated:*` no bucket de originais com prefixo `medicos/`, destino `handler.handler`. Recomendação inicial: Node.js 22, arquitetura x86_64, 512 MiB e timeout de 30 s, a ajustar com as medições. O papel da Lambda precisa de `s3:GetObject` em `cliniflow-originais/medicos/*` e `s3:GetObject` + `s3:PutObject` em `cliniflow-miniaturas/medicos/*` e `cliniflow-miniaturas/erros/medicos/*`. Se houver versionamento, acrescentar `s3:GetObjectVersion`; se houver KMS gerenciado pelo cliente, acrescentar as permissões de chave necessárias. A permissão para S3 invocar a Lambda é separada. Configurar logs e, se desejado, destino para falhas finais. O pacote `sharp` contém binários nativos e precisa ser instalado em Linux compatível com o [runtime e a arquitetura da Lambda](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-layers.html).
+**Integração no LocalStack:** `docker-compose.yml` instala as dependências em Linux pelo serviço `empacotador`; `localstack/init/02-lambda.sh` registra `handler.handler`, Node.js 22, x86_64, 512 MiB, timeout de 30 s e a notificação `s3:ObjectCreated:*` no bucket de originais com prefixo `medicos/`. Esses parâmetros devem ser confirmados no teste integrado. O [template AWS](../../infra/template.yaml) documenta as permissões da função e da API para os buckets; a permissão para o S3 invocar a Lambda é separada. Se houver versionamento, acrescentar `s3:GetObjectVersion`; se houver KMS gerenciado pelo cliente, acrescentar as permissões de chave necessárias. O pacote `sharp` contém binários nativos e precisa ser instalado em Linux compatível com o [runtime e a arquitetura da Lambda](https://docs.aws.amazon.com/lambda/latest/dg/nodejs-layers.html).
 
 Para gerar um ZIP **local**, dentro deste diretório e em ambiente Linux compatível:
 
@@ -38,7 +38,7 @@ npm ci --omit=dev
 zip -r function.zip handler.js servico-imagens.js armazenamento.js package.json node_modules
 ```
 
-O ZIP é um artefato para o Integrante 3 integrar. A instalação feita neste computador não foi validada como pacote executável dentro do LocalStack. Não foi feito deploy.
+O ZIP manual é uma alternativa ao serviço `empacotador` do Compose. O script de registro já existe no repositório, mas o pacote ainda não foi validado por nós como executável dentro do LocalStack.
 
 ## Testes e comparação
 
@@ -54,7 +54,7 @@ node processar-local.js foto.png miniatura.webp
 ## Contratos com os outros integrantes
 
 - **Integrante 1:** a API reconcilia `PROCESSANDO` por `HEAD` da miniatura e depois `GET` do erro. A Lambda não acessa o banco. O identificador `foto_id` já distingue envios; a API decide qual é a foto atual do médico.
-- **Integrante 3:** criar buckets, evento S3 → Lambda, variáveis, permissões e pacote Linux. Dois buckets impedem que a miniatura dispare novamente a função.
+- **Integrante 3:** o código de infraestrutura cria buckets, pacote Linux, função e evento S3 → Lambda; falta confirmar a execução no LocalStack. Dois buckets impedem que a miniatura dispare novamente a função.
 - **Integrante 4:** executar os [11 cenários da seção 7](../../docs/CONTRATOS.md) no fluxo completo. Os testes aqui cobrem a Lambda sem credenciais AWS. Ainda faltam os testes de integração no LocalStack.
 
 ## Fundamentos para apresentação
