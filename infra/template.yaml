@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  CliniFlow - pipeline de fotos (PoC Serverless & Edge). Destino de produção na AWS real;
+  a PoC roda no LocalStack (infra/localstack/init.sh). Segue docs/CONTRATOS.md §4 e §5.
+
+# Na AWS real o nome de bucket é global, por isso o sufixo com o id da conta. Os nomes vão para
+# BUCKET_ORIGINAIS / BUCKET_MINIATURAS da API e do Worker.
+# Nas políticas os nomes são montados com !Sub (e não !Ref) para evitar a dependência circular
+# bucket -> notificação -> função -> role -> bucket.
+Resources:
+  # Entrada: originais enviados pelo Worker via URL pré-assinada.
+  BucketOriginais:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cliniflow-originais-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Saída: miniaturas e arquivos de erro. SEM gatilho, então a miniatura nunca dispara a função de novo.
+  BucketMiniaturas:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cliniflow-miniaturas-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Código: Integrante 2 (serverless/processador-imagens). `sharp` é nativo: use `sam build --use-container`.
+  FuncaoMiniatura:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../serverless/processador-imagens/
+      Handler: handler.handler
+      Runtime: nodejs22.x
+      Architectures: [x86_64]
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          BUCKET_ORIGINAIS: !Sub cliniflow-originais-${AWS::AccountId}
+          BUCKET_MINIATURAS: !Sub cliniflow-miniaturas-${AWS::AccountId}
+      # Permissões do README da função: lê originais; lê (HEAD de evento repetido) e grava miniaturas e erros.
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: s3:GetObject
+              Resource: !Sub arn:aws:s3:::cliniflow-originais-${AWS::AccountId}/medicos/*
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource:
+                - !Sub arn:aws:s3:::cliniflow-miniaturas-${AWS::AccountId}/medicos/*
+                - !Sub arn:aws:s3:::cliniflow-miniaturas-${AWS::AccountId}/erros/medicos/*
+            # Sem ListBucket, HEAD de objeto inexistente devolve 403 (não 404) e a função retentaria à toa.
+            - Effect: Allow
+              Action: s3:ListBucket
+              Resource: !Sub arn:aws:s3:::cliniflow-miniaturas-${AWS::AccountId}
+      Events:
+        UploadOriginal:
+          Type: S3
+          Properties:
+            Bucket: !Ref BucketOriginais
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: medicos/
+
+  # Identidade da API do CliniFlow (CONTRATOS §4). O Worker não tem identidade AWS nenhuma.
+  UsuarioApi:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+        - PolicyName: fotos-cliniflow
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject # só para assinar a URL de upload
+                Resource: !Sub arn:aws:s3:::cliniflow-originais-${AWS::AccountId}/medicos/*
+              - Effect: Allow
+                Action: s3:GetObject # inclui HEAD; reconciliação e URL de leitura
+                Resource: !Sub arn:aws:s3:::cliniflow-miniaturas-${AWS::AccountId}/*
+              - Effect: Allow
+                Action: s3:ListBucket # para o HEAD de objeto inexistente responder 404 e não 403
+                Resource: !Sub arn:aws:s3:::cliniflow-miniaturas-${AWS::AccountId}
+
+Outputs:
+  BucketOriginais:
+    Value: !Ref BucketOriginais
+  BucketMiniaturas:
+    Value: !Ref BucketMiniaturas
+  FuncaoMiniatura:
+    Value: !Ref FuncaoMiniatura
+  UsuarioApi:
+    Description: Gere a chave com `aws iam create-access-key --user-name <este valor>` (o segredo não fica no output)
+    Value: !Ref UsuarioApi

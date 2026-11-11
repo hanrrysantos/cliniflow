@@ -25,6 +25,15 @@ services:
       interval: 5s
       retries: 20
 
+  # Instala as dependências da Lambda em Linux (o sharp é nativo) num volume, sem tocar no node_modules do host.
+  empacotador:
+    image: node:22-bookworm-slim
+    working_dir: /pacote
+    command: ["sh", "-c", "rm -rf /pacote/* && cp /src/handler.js /src/servico-imagens.js /src/armazenamento.js /src/package.json /src/package-lock.json /pacote/ && npm ci --omit=dev --no-audit --no-fund"]
+    volumes:
+      - ./serverless/processador-imagens:/src:ro
+      - pacote-lambda:/pacote
+
   localstack:
     image: localstack/localstack:2026.10
     ports:
@@ -34,8 +43,16 @@ services:
       S3_SKIP_SIGNATURE_VALIDATION: "0"
     volumes:
       - ./localstack/init:/etc/localstack/init/ready.d:ro
+      - ./localstack/shutdown:/etc/localstack/init/shutdown.d:ro
+      - ./localstack/dados:/var/lib/cliniflow-backup # backup dos buckets entre reinícios (Hobby não tem persistência)
+      - pacote-lambda:/opt/processador-imagens:ro
+      - /var/run/docker.sock:/var/run/docker.sock # a Lambda roda em containers criados pelo LocalStack
+    depends_on:
+      empacotador: { condition: service_completed_successfully }
+    stop_grace_period: 30s # tempo para o shutdown.d copiar os buckets
     healthcheck:
-      test: ["CMD", "awslocal", "s3api", "head-bucket", "--bucket", "cliniflow-miniaturas"]
+      # pronto só quando TODOS os scripts de init terminaram (buckets, backup, Lambda e gatilho)
+      test: ["CMD-SHELL", "curl -sf localhost:4566/_localstack/init/ready | grep -q '\"completed\": *true'"]
       interval: 5s
       retries: 30
 
@@ -78,3 +95,6 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
+volumes:
+  pacote-lambda:
