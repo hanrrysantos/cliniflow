@@ -13,8 +13,16 @@ export function tipoReal(b) {
   return null;
 }
 
+// CORS: o frontend envia o arquivo direto do navegador, de outra origem, e o header X-Upload-Url exige preflight.
+// Qualquer origem pode chamar: o Worker não usa cookie nem credencial, e o destino já é validado no passo 1.
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'PUT',
+  'access-control-allow-headers': 'content-type, x-upload-url',
+};
+
 function json(status, corpo) {
-  return Response.json(corpo, { status });
+  return Response.json(corpo, { status, headers: CORS });
 }
 
 // Devolve a chave do objeto se a URL aponta para o bucket de originais no endpoint permitido.
@@ -81,6 +89,7 @@ async function upload(request, env) {
 export default {
   async fetch(request, env) {
     if (new URL(request.url).pathname !== '/upload') return json(404, { erro: 'Rota não encontrada' });
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (request.method !== 'PUT') return json(405, { erro: 'Use PUT /upload' });
     return upload(request, env);
   },

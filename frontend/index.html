@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#0e5a4e" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#10332d" media="(prefers-color-scheme: dark)">
+  <title>CliniFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+  <header class="topo">
+    <a class="marca" href="#agendar" translate="no">CliniFlow</a>
+    <nav aria-label="Seções">
+      <a href="#agendar">Agendar</a>
+      <a href="#consultas">Consultas</a>
+      <a href="#pacientes">Pacientes</a>
+      <a href="#medicos">Médicos</a>
+    </nav>
+    <p id="saude">Verificando o sistema…</p>
+  </header>
+
+  <main id="conteudo" tabindex="-1">
+    <section id="tela-agendar">
+      <h1>Agendar consulta</h1>
+      <div class="linha">
+        <label>Paciente <select id="paciente"></select></label>
+        <label>Mostrar
+          <select id="filtro">
+            <option value="LIVRE">Horários livres</option>
+            <option value="RESERVADO">Horários reservados</option>
+            <option value="TODOS">Todos os horários</option>
+          </select>
+        </label>
+      </div>
+      <p id="sem-paciente" class="vazio" hidden>
+        Para agendar, <a href="#pacientes">cadastre ou busque um paciente</a>.
+      </p>
+      <div id="agenda"></div>
+    </section>
+
+    <section id="tela-consultas" hidden>
+      <h1>Consultas</h1>
+      <form id="buscar-consulta" class="linha painel">
+        <label>Número da consulta <input name="id" type="number" min="1" inputmode="numeric" autocomplete="off" required></label>
+        <button>Buscar consulta</button>
+      </form>
+      <ul id="consultas" class="lista"></ul>
+    </section>
+
+    <section id="tela-pacientes" hidden>
+      <h1>Pacientes</h1>
+      <div class="duas">
+        <form id="novo-paciente" class="painel">
+          <h2>Cadastrar paciente</h2>
+          <label>Nome <input name="nome" required autocomplete="off"></label>
+          <label>E-mail <input name="email" type="email" required autocomplete="off" spellcheck="false"></label>
+          <label>Telefone (opcional) <input name="telefone" type="tel" autocomplete="off"></label>
+          <button>Cadastrar paciente</button>
+        </form>
+        <form id="buscar-paciente" class="painel">
+          <h2>Buscar paciente já cadastrado</h2>
+          <label>Número do paciente <input name="id" type="number" min="1" inputmode="numeric" autocomplete="off" required></label>
+          <button>Buscar paciente</button>
+        </form>
+      </div>
+      <ul id="pacientes" class="lista"></ul>
+    </section>
+
+    <section id="tela-medicos" hidden>
+      <h1>Médicos</h1>
+      <form id="novo-medico" class="linha painel">
+        <label>Nome <input name="nome" required autocomplete="off"></label>
+        <label>Especialidade <input name="especialidade" required autocomplete="off"></label>
+        <button>Cadastrar médico</button>
+      </form>
+      <ul id="medicos" class="lista"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Pacientes, médicos e consultas aparecem aqui quando são cadastrados ou buscados neste navegador.</p>
+    <button id="esquecer" class="discreto" type="button">Esquecer dados deste navegador</button>
+  </footer>
+
+  <p id="aviso" role="status" hidden></p>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

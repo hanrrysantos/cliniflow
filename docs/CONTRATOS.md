@@ -108,6 +108,10 @@ Respostas:
 | `415` | `{ "erro": "Conteúdo não é uma imagem JPEG/PNG/WebP" }` | Falhou o passo 2 ou o 4 |
 | `502` | `{ "erro": "Armazenamento indisponível" }` | O S3 falhou ou não respondeu |
 
+**CORS:** o frontend chama o Worker direto do navegador, de outra origem. O Worker responde ao
+preflight (`OPTIONS /upload` → `204`) e inclui `Access-Control-Allow-Origin: *` em todas as
+respostas. Ele não usa cookie nem credencial, e o destino continua validado pelo passo 1.
+
 Arquivo recusado pelo Worker **não chega ao S3** e, portanto, não dispara a Lambda. Como o status
 da foto não muda sozinho nesse caso, ela termina em `ERRO` por tempo limite (§3).
 

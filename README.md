@@ -136,6 +136,7 @@ curl http://localhost:8080/health
 | Endereço | O quê |
 |----------|-------|
 | `http://localhost:8080` | API (via API Gateway Nginx) |
+| `http://localhost:8080/app/` | Frontend (pasta `frontend/`, HTML/CSS/JS sem build, servido pelo gateway). O envio de foto precisa do Worker rodando (`npm run dev` em `edge/`). |
 | `http://localhost:15672` | Painel do RabbitMQ (guest/guest) — filas `notificacoes` e `notificacoes.dlq` |
 | `http://localhost:4566` | LocalStack (S3 e Lambda emulados) — buckets `cliniflow-originais` e `cliniflow-miniaturas` |
 

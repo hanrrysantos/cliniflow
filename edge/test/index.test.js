@@ -118,6 +118,15 @@ test('S3 com erro 5xx ou fora do ar → 502', async () => {
   await esperar(await enviar(), 502, /indisponível/);
 });
 
+test('CORS: preflight do navegador → 204, e as respostas liberam a leitura pelo frontend', async () => {
+  const preflight = await enviar({ metodo: 'OPTIONS', tipo: null, destino: null });
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('access-control-allow-methods'), 'PUT');
+  assert.match(preflight.headers.get('access-control-allow-headers'), /x-upload-url/);
+  assert.equal((await enviar()).headers.get('access-control-allow-origin'), '*');
+  assert.equal((await enviar({ destino: null })).headers.get('access-control-allow-origin'), '*');
+});
+
 test('outras rotas → 404; outro método em /upload → 405', async () => {
   assert.equal((await enviar({ caminho: '/health', metodo: 'GET' })).status, 404);
   assert.equal((await enviar({ metodo: 'POST' })).status, 405);
