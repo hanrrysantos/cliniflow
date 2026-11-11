@@ -2,6 +2,7 @@ CREATE SCHEMA pacientes;
 CREATE SCHEMA agenda;
 CREATE SCHEMA agendamentos;
 CREATE SCHEMA notificacoes;
+CREATE SCHEMA fotos;
 
 CREATE TABLE pacientes.pacientes (
   id        SERIAL PRIMARY KEY,
@@ -48,3 +49,20 @@ CREATE TABLE notificacoes.notificacoes_enviadas (
   destinatario TEXT NOT NULL,
   enviado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============ Trabalho final — Módulo Fotos (pipeline serverless) ============
+-- Sem FK para agenda.medicos: o médico é validado pela interface do módulo Agenda.
+CREATE TABLE fotos.fotos (
+  id              UUID PRIMARY KEY,
+  medico_id       INT  NOT NULL,
+  content_type    TEXT NOT NULL,
+  tamanho_bytes   INT  NOT NULL,
+  chave_original  TEXT NOT NULL UNIQUE,
+  chave_miniatura TEXT NOT NULL UNIQUE,
+  status          TEXT NOT NULL DEFAULT 'PROCESSANDO' CHECK (status IN ('PROCESSANDO', 'CONCLUIDO', 'ERRO')),
+  erro            TEXT,
+  criado_em       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX fotos_medico_idx ON fotos.fotos (medico_id, criado_em DESC);

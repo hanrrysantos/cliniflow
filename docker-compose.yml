@@ -1,3 +1,7 @@
+x-env: &env
+  DATABASE_URL: postgres://cliniflow:cliniflow@postgres:5432/cliniflow
+  RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -21,12 +25,34 @@ services:
       interval: 5s
       retries: 20
 
+  localstack:
+    image: localstack/localstack:2026.10
+    ports:
+      - "4566:4566"
+    environment:
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:-}
+      S3_SKIP_SIGNATURE_VALIDATION: "0"
+    volumes:
+      - ./localstack/init:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test: ["CMD", "awslocal", "s3api", "head-bucket", "--bucket", "cliniflow-miniaturas"]
+      interval: 5s
+      retries: 30
+
   api:
     build: .
     command: ["node", "src/app.js"]
-    environment: &env
-      DATABASE_URL: postgres://cliniflow:cliniflow@postgres:5432/cliniflow
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    environment:
+      <<: *env
+      S3_ENDPOINT: http://localstack:4566
+      S3_PUBLIC_ENDPOINT: http://localhost:4566
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      BUCKET_ORIGINAIS: cliniflow-originais
+      BUCKET_MINIATURAS: cliniflow-miniaturas
+      WORKER_URL: http://localhost:8787
+      FOTO_TIMEOUT_SEGUNDOS: ${FOTO_TIMEOUT_SEGUNDOS:-300}
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
