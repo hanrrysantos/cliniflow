@@ -37,6 +37,11 @@ async function listarHorarios(status) {
   return rows;
 }
 
+async function buscarMedico(medicoId) {
+  const { rows } = await db.query('SELECT id, nome, especialidade FROM agenda.medicos WHERE id = $1', [medicoId]);
+  return rows[0] || null;
+}
+
 async function buscarHorario(horarioId) {
   const { rows } = await db.query(
     `SELECT h.id, h.data_hora, h.status, m.nome, m.especialidade
@@ -61,4 +66,12 @@ async function liberarHorario(client, horarioId) {
   await client.query("UPDATE agenda.horarios SET status = 'LIVRE' WHERE id = $1", [horarioId]);
 }
 
-module.exports = { criarMedico, criarHorario, listarHorarios, buscarHorario, reservarHorario, liberarHorario };
+module.exports = {
+  criarMedico,
+  criarHorario,
+  listarHorarios,
+  buscarMedico,
+  buscarHorario,
+  reservarHorario,
+  liberarHorario,
+};

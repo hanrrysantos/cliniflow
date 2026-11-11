@@ -1,4 +1,4 @@
 const router = require('./routes');
-const { buscarHorario, reservarHorario, liberarHorario } = require('./service');
+const { buscarMedico, buscarHorario, reservarHorario, liberarHorario } = require('./service');
 
-module.exports = { router, buscarHorario, reservarHorario, liberarHorario };
+module.exports = { router, buscarMedico, buscarHorario, reservarHorario, liberarHorario };
