@@ -4,6 +4,7 @@ const broker = require('./shared/broker');
 const pacientes = require('./modules/pacientes');
 const agenda = require('./modules/agenda');
 const agendamentos = require('./modules/agendamentos');
+const fotos = require('./modules/fotos');
 
 const app = express();
 app.use(express.json());
@@ -29,6 +30,7 @@ app.get('/health', async (req, res) => {
 app.use(pacientes.router);
 app.use(agenda.router);
 app.use(agendamentos.router);
+app.use(fotos.router);
 
 app.use((req, res) => res.status(404).json({ erro: 'Rota não encontrada' }));
 
