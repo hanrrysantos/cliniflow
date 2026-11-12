@@ -289,6 +289,10 @@ O LocalStack exige *path-style* (`forcePathStyle: true` no SDK).
 traz um `.env.example` só com o nome da variável. Cada integrante usa o próprio token (conta
 gratuita, plano Hobby).
 
+O LocalStack também precisa de `S3_SKIP_SIGNATURE_VALIDATION=0`. Por padrão ele aceita URLs
+pré-assinadas sem conferir a assinatura, e a AWS confere. Sem essa variável, um `Content-Type`
+errado ou uma URL adulterada passariam no ambiente local.
+
 ---
 
 ## 7. Cenários que o contrato garante (base dos testes)
